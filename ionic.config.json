@@ -1,0 +1,7 @@
+{
+  "name": "micro-logistics-app",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite"
+}
