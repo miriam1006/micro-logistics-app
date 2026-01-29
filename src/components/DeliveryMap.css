@@ -1,0 +1,9 @@
+.map-container {
+    height: 250px;
+    /* Altura del mapa */
+    width: 100%;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid #ddd;
+}

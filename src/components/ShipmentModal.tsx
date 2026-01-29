@@ -1,10 +1,13 @@
+import { API_URL } from '../config';
 import {
     IonModal, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
     IonContent, IonList, IonItem, IonLabel, IonNote, IonIcon, IonFooter
 } from '@ionic/react';
-import { close, timeOutline, checkmarkCircle } from 'ionicons/icons';
+import { close, timeOutline, checkmarkCircle, camera } from 'ionicons/icons';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import DeliveryMap from './DeliveryMap';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 interface ShipmentModalProps {
     isOpen: boolean;
@@ -19,7 +22,7 @@ const ShipmentModal: React.FC<ShipmentModalProps> = ({ isOpen, onClose, shipment
     // Cargar detalles completos (incluyendo LOGS) cuando se abre el modal
     useEffect(() => {
         if (isOpen && shipmentId) {
-            axios.get(`https://micro-logistics-api.onrender.com/shipments/${shipmentId}`)
+            axios.get(`${API_URL}/shipments/${shipmentId}`)
                 .then(response => setDetails(response.data))
                 .catch(err => console.error(err));
         } else {
@@ -27,23 +30,44 @@ const ShipmentModal: React.FC<ShipmentModalProps> = ({ isOpen, onClose, shipment
         }
     }, [isOpen, shipmentId]);
 
-    // Función para cambiar estatus a ENTREGADO
-    const markAsDelivered = async () => {
-        if (!shipmentId) return;
+    // Función para tomar foto y luego entregar
+    const takePictureAndDeliver = async () => {
         try {
-            await axios.post('https://micro-logistics-api.onrender.com/shipment-logs', {
-                shipmentId: shipmentId,
-                status: 'DELIVERED',
-                notes: 'Entregado desde la App Móvil'
+            // 1. Abrir Cámara
+            const image = await Camera.getPhoto({
+                quality: 90,
+                allowEditing: false,
+                resultType: CameraResultType.Base64, // Obtenemos la foto como texto para guardarla fácil
+                source: CameraSource.Camera, // Obligar a usar cámara, no galería
             });
-            alert('¡Envío entregado con éxito!');
-            onUpdate(); // Recargar lista de fondo
-            onClose();  // Cerrar modal
+
+            // Si el usuario tomó la foto (no canceló)
+            if (image.base64String) {
+                await submitDelivery(image.base64String);
+            }
         } catch (error) {
-            alert('Error al actualizar envío');
+            console.log('El usuario canceló la cámara o hubo error', error);
         }
     };
 
+    // Función interna para enviar al backend
+    const submitDelivery = async (photoBase64: string) => {
+        if (!shipmentId) return;
+        try {
+            await axios.post(`${API_URL}/shipment-logs`, { // Asegúrate de usar API_URL
+                shipmentId: shipmentId,
+                status: 'DELIVERED',
+                notes: 'Entregado con evidencia fotográfica 📸',
+                // Opcional: Aquí podrías enviar la foto al backend si tuviéramos campo para ello
+                // evidence: photoBase64 
+            });
+            alert('¡Evidencia guardada y paquete entregado!');
+            onUpdate();
+            onClose();
+        } catch (error) {
+            alert('Error al guardar la entrega');
+        }
+    };
     return (
         <IonModal isOpen={isOpen} onDidDismiss={onClose}>
             <IonHeader>
@@ -58,6 +82,7 @@ const ShipmentModal: React.FC<ShipmentModalProps> = ({ isOpen, onClose, shipment
             <IonContent className="ion-padding">
                 {details ? (
                     <>
+                        <DeliveryMap />
                         <h2>{details.pickupAddress} ➡️ {details.deliveryAddress}</h2>
                         <p><strong>Cliente:</strong> {details.client?.name}</p>
 
@@ -86,9 +111,9 @@ const ShipmentModal: React.FC<ShipmentModalProps> = ({ isOpen, onClose, shipment
             {details && details.status !== 'DELIVERED' && (
                 <IonFooter>
                     <IonToolbar>
-                        <IonButton expand="full" color="success" onClick={markAsDelivered}>
-                            <IonIcon icon={checkmarkCircle} slot="start" />
-                            Confirmar Entrega
+                        <IonButton expand="full" color="success" onClick={takePictureAndDeliver}>
+                            <IonIcon icon={camera} slot="start" /> {/* Cambia el icono a cámara si quieres */}
+                            Capturar Entrega
                         </IonButton>
                     </IonToolbar>
                 </IonFooter>

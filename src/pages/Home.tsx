@@ -1,3 +1,4 @@
+import { API_URL } from '../config';
 import {
   IonContent, IonHeader, IonPage, IonTitle, IonToolbar,
   IonCard, IonCardHeader, IonCardTitle, IonCardSubtitle, IonCardContent,
@@ -14,7 +15,7 @@ const Home: React.FC = () => {
 
   const fetchShipments = async () => {
     try {
-      const response = await axios.get('https://micro-logistics-api.onrender.com/shipments');
+      const response = await axios.get(`${API_URL}/shipments`);
       setShipments(response.data);
     } catch (error) {
       console.error('Error cargando envíos:', error);
