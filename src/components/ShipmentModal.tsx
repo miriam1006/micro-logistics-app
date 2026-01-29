@@ -19,7 +19,7 @@ const ShipmentModal: React.FC<ShipmentModalProps> = ({ isOpen, onClose, shipment
     // Cargar detalles completos (incluyendo LOGS) cuando se abre el modal
     useEffect(() => {
         if (isOpen && shipmentId) {
-            axios.get(`http://localhost:3000/shipments/${shipmentId}`)
+            axios.get(`https://micro-logistics-api.onrender.com/shipments/${shipmentId}`)
                 .then(response => setDetails(response.data))
                 .catch(err => console.error(err));
         } else {
@@ -31,7 +31,7 @@ const ShipmentModal: React.FC<ShipmentModalProps> = ({ isOpen, onClose, shipment
     const markAsDelivered = async () => {
         if (!shipmentId) return;
         try {
-            await axios.post('http://localhost:3000/shipment-logs', {
+            await axios.post('https://micro-logistics-api.onrender.com/shipment-logs', {
                 shipmentId: shipmentId,
                 status: 'DELIVERED',
                 notes: 'Entregado desde la App Móvil'

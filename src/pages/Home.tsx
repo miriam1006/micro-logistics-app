@@ -14,7 +14,7 @@ const Home: React.FC = () => {
 
   const fetchShipments = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/shipments');
+      const response = await axios.get('https://micro-logistics-api.onrender.com/shipments');
       setShipments(response.data);
     } catch (error) {
       console.error('Error cargando envíos:', error);
