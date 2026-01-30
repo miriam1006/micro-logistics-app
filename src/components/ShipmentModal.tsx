@@ -3,11 +3,12 @@ import {
     IonModal, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
     IonContent, IonList, IonItem, IonLabel, IonNote, IonIcon, IonFooter
 } from '@ionic/react';
-import { close, timeOutline, checkmarkCircle, camera } from 'ionicons/icons';
-import { useEffect, useState } from 'react';
+import { close, timeOutline, checkmarkCircle, camera, trashOutline } from 'ionicons/icons';
+import { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import DeliveryMap from './DeliveryMap';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import SignatureCanvas from 'react-signature-canvas';
 
 interface ShipmentModalProps {
     isOpen: boolean;
@@ -18,6 +19,11 @@ interface ShipmentModalProps {
 
 const ShipmentModal: React.FC<ShipmentModalProps> = ({ isOpen, onClose, shipmentId, onUpdate }) => {
     const [details, setDetails] = useState<any>(null);
+    const sigPad = useRef<any>({});
+
+    const clearSignature = () => {
+        sigPad.current?.clear();
+    };
 
     // Cargar detalles completos (incluyendo LOGS) cuando se abre el modal
     useEffect(() => {
@@ -53,21 +59,49 @@ const ShipmentModal: React.FC<ShipmentModalProps> = ({ isOpen, onClose, shipment
     // Función interna para enviar al backend
     const submitDelivery = async (photoBase64: string) => {
         if (!shipmentId) return;
+
         try {
-            await axios.post(`${API_URL}/shipment-logs`, { // Asegúrate de usar API_URL
+            // 1. Preparamos el mensaje de la nota
+            let noteText = 'Entregado con evidencia fotográfica 📸';
+
+            // Si el panel de firma NO está vacío, agregamos el texto
+            if (sigPad.current && !sigPad.current.isEmpty()) {
+                noteText += ' y Firma del Cliente ✍️';
+            }
+
+            // 2. Enviamos al Backend con la nota dinámica
+            await axios.post(`${API_URL}/shipment-logs`, {
                 shipmentId: shipmentId,
                 status: 'DELIVERED',
-                notes: 'Entregado con evidencia fotográfica 📸',
-                // Opcional: Aquí podrías enviar la foto al backend si tuviéramos campo para ello
-                // evidence: photoBase64 
+                notes: noteText
+                // evidence: photoBase64 (Pendiente para v2)
             });
-            alert('¡Evidencia guardada y paquete entregado!');
+
+            alert('¡Entrega registrada con éxito!');
             onUpdate();
             onClose();
         } catch (error) {
+            console.error(error);
             alert('Error al guardar la entrega');
         }
     };
+    // Función para iniciar el viaje (PENDING -> IN_TRANSIT)
+    const startTrip = async () => {
+        if (!shipmentId) return;
+        try {
+            await axios.post(`${API_URL}/shipment-logs`, {
+                shipmentId: shipmentId,
+                status: 'IN_TRANSIT',
+                notes: 'Conductor inició la ruta 🚚'
+            });
+            alert('¡Ruta iniciada! Buen viaje.');
+            onUpdate();
+            onClose();
+        } catch (error) {
+            alert('Error al iniciar ruta');
+        }
+    };
+
     return (
         <IonModal isOpen={isOpen} onDidDismiss={onClose}>
             <IonHeader>
@@ -85,7 +119,27 @@ const ShipmentModal: React.FC<ShipmentModalProps> = ({ isOpen, onClose, shipment
                         <DeliveryMap />
                         <h2>{details.pickupAddress} ➡️ {details.deliveryAddress}</h2>
                         <p><strong>Cliente:</strong> {details.client?.name}</p>
-
+                        {/* --- ZONA DE FIRMA (Solo si está en tránsito) --- */}
+                        {details.status === 'IN_TRANSIT' && (
+                            <div style={{ marginTop: '20px', marginBottom: '20px' }}>
+                                <IonLabel>✍️ Firma del Cliente:</IonLabel>
+                                <div style={{ border: '2px dashed #ccc', borderRadius: '10px', marginTop: '5px' }}>
+                                    <SignatureCanvas
+                                        ref={sigPad}
+                                        penColor="black"
+                                        canvasProps={{
+                                            width: 320, // Ancho fijo para probar
+                                            height: 150,
+                                            className: 'sigCanvas'
+                                        }}
+                                    />
+                                </div>
+                                <IonButton size="small" fill="clear" color="danger" onClick={clearSignature}>
+                                    <IonIcon icon={trashOutline} slot="start" />
+                                    Borrar Firma
+                                </IonButton>
+                            </div>
+                        )}
                         <h3>Historial de Rastreo (Logs)</h3>
                         <IonList>
                             {details.logs?.map((log: any) => (
@@ -111,10 +165,29 @@ const ShipmentModal: React.FC<ShipmentModalProps> = ({ isOpen, onClose, shipment
             {details && details.status !== 'DELIVERED' && (
                 <IonFooter>
                     <IonToolbar>
-                        <IonButton expand="full" color="success" onClick={takePictureAndDeliver}>
-                            <IonIcon icon={camera} slot="start" /> {/* Cambia el icono a cámara si quieres */}
-                            Capturar Entrega
-                        </IonButton>
+                        {/* CASO 1: Si está PENDIENTE -> Botón Azul "Iniciar Ruta" */}
+                        {details && details.status === 'PENDING' && (
+                            <IonButton expand="full" color="primary" onClick={startTrip}>
+                                <IonIcon icon={timeOutline} slot="start" />
+                                Iniciar Ruta
+                            </IonButton>
+                        )}
+
+                        {/* CASO 2: Si está EN TRANSITO -> Botón Verde "Cámara" */}
+                        {details && details.status === 'IN_TRANSIT' && (
+                            <IonButton expand="full" color="success" onClick={takePictureAndDeliver}>
+                                <IonIcon icon={camera} slot="start" />
+                                Capturar Entrega
+                            </IonButton>
+                        )}
+
+                        {/* CASO 3: Si ya se ENTREGÓ -> Mensaje informativo */}
+                        {details && details.status === 'DELIVERED' && (
+                            <IonButton expand="full" color="medium" disabled>
+                                <IonIcon icon={checkmarkCircle} slot="start" />
+                                Entrega Completada
+                            </IonButton>
+                        )}
                     </IonToolbar>
                 </IonFooter>
             )}

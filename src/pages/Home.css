@@ -1,0 +1,61 @@
+/* Fondo general */
+ion-content {
+    --background: #f4f5f8;
+    /* Gris muy suave */
+}
+
+/* Tarjetas Estilo "Material Design" */
+ion-card {
+    border-radius: 16px;
+    /* Bordes redondeados */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    /* Sombra suave */
+    margin: 16px;
+    background: white;
+    transition: transform 0.2s ease;
+}
+
+/* Efecto al tocar la tarjeta */
+ion-card:active {
+    transform: scale(0.98);
+}
+
+ion-card-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #333;
+    margin-top: 8px;
+}
+
+ion-card-subtitle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Badges (Etiquetas de estado) personalizadas */
+ion-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Colores específicos para los estados */
+ion-badge[color="warning"] {
+    /* PENDING */
+    --background: #fff3cd;
+    --color: #856404;
+}
+
+ion-badge[color="primary"] {
+    /* IN_TRANSIT */
+    --background: #cce5ff;
+    --color: #004085;
+}
+
+ion-badge[color="success"] {
+    /* DELIVERED */
+    --background: #d4edda;
+    --color: #155724;
+}

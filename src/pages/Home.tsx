@@ -2,15 +2,17 @@ import { API_URL } from '../config';
 import {
   IonContent, IonHeader, IonPage, IonTitle, IonToolbar,
   IonCard, IonCardHeader, IonCardTitle, IonCardSubtitle, IonCardContent,
-  IonBadge, IonList, IonRefresher, IonRefresherContent
+  IonBadge, IonList, IonRefresher, IonRefresherContent, IonFab, IonFabButton, IonIcon
 } from '@ionic/react';
+import { add } from 'ionicons/icons';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import ShipmentModal from '../components/ShipmentModal'; // <--- IMPORTANTE
-import './Home.css';
+import ShipmentModal from '../components/ShipmentModal'; 
+import CreateShipmentModal from '../components/CreateShipmentModal';
 
 const Home: React.FC = () => {
   const [shipments, setShipments] = useState<any[]>([]);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedShipmentId, setSelectedShipmentId] = useState<string | null>(null); // <--- NUEVO ESTADO
 
   const fetchShipments = async () => {
@@ -69,6 +71,19 @@ const Home: React.FC = () => {
           isOpen={!!selectedShipmentId}
           shipmentId={selectedShipmentId}
           onClose={() => setSelectedShipmentId(null)}
+          onUpdate={fetchShipments}
+        />
+        {/* 1. El Botón Flotante (+) */}
+        <IonFab vertical="bottom" horizontal="end" slot="fixed">
+          <IonFabButton onClick={() => setIsCreateOpen(true)}>
+            <IonIcon icon={add} />
+          </IonFabButton>
+        </IonFab>
+
+        {/* 2. La Ventana (Modal) que creaste */}
+        <CreateShipmentModal
+          isOpen={isCreateOpen}
+          onClose={() => setIsCreateOpen(false)}
           onUpdate={fetchShipments}
         />
 
